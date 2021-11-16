@@ -16,17 +16,17 @@ RUN apt-get install -y build-essential cmake clang libc++-dev libc++abi-dev pkg-
 # Not strictly needed to run the client, but by processing the desired file inside here, we don't need to check in large files to source control.
 RUN apt-get install -y ffmpeg
 
-COPY Dockerfile LICENSE README.md ./
 COPY common ./common/
 COPY src ./src/
 
 WORKDIR src/build
 RUN CC=clang CXX=clang++ cmake ..
 RUN make
-
 WORKDIR ../..
 
-# Since this is the most likely to change file, isolate it for better docker layer cache re-use:
+COPY Dockerfile LICENSE README.md ./
+
+# Since this is the most likely-to-change file, isolate it for better docker layer cache re-use:
 COPY source.mp4 runit.sh ./
 
 # Convert to 30 frames per second to allow for varying frame rate sources.
