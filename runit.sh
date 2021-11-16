@@ -1,7 +1,6 @@
 #! /usr/bin/env bash
 
-VIDEO_FILE=source.yuv
-AUDIO_FILE=source.pcm
+# VIDEO_FILE and AUDIO_FILE are defined by the Dockerfile to avoid duplication here.
 
 if [ ! -f "$VIDEO_FILE" ]; then
   echo Missing video file "${VIDEO_FILE}"
