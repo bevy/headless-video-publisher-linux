@@ -108,14 +108,15 @@ detect_os ()
 main ()
 {
   detect_os
-  curl_check
-  gpg_check
 
   # Need to first run apt-get update so that apt-transport-https can be
-  # installed
+  # installed -- and so that curl can be installed.
   echo -n "Running apt-get update... "
   apt-get update &> /dev/null
   echo "done."
+
+  curl_check
+  gpg_check
 
   # Install the debian-archive-keyring package on debian systems so that
   # apt-transport-https can be installed next
