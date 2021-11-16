@@ -10,6 +10,33 @@ If you are looking for a Puppeteer/NodeJS based headless publisher - https://git
 
 ## Setting up your environment
 
+### Docker
+
+If you want to experiment with this sample application, without installing things locally,
+you can use the `Dockerfile` and `runit.sh` helper script.
+
+The Dockerfile will expect to find the file `source.mp4` in the root of the repo,
+and will process that into the raw files needed by the sample application.
+It's up to you to find/create such a file. A 10-second-long mp4 file is recommended.
+
+Once the image is built, when you run it there is a handy helper script `runit.sh`
+that will take the needed connection parameters and then start the sample application
+with the built raw files and those parameters.
+
+#### Build the image
+
+```bash
+docker build -t opentok .
+```
+
+#### Play with the sample script
+
+```bash
+docker run -it opentok
+
+# ./runit.sh api-key session-id token
+```
+
 ### OpenTok SDK
 
 Building this sample application requires having a local installation of the

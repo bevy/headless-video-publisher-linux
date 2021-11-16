@@ -2,7 +2,7 @@
 #    This is lifted from the README.md file of the headless-video-publisher-linux repo.
 #    In addition, to save space in the source repo (beacuse the yuv file esp is 350Mb for just the video)
 #      we also install ffmpeg here.
-#    Expected: `source.mp4` a 10-second(ish) long mp4 file to be processed.
+#    Expected: `source.mp4` a 10-second(ish) long mp4 file to be processed, in the root of this repo.
 
 FROM debian:buster
 
