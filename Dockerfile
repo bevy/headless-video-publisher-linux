@@ -26,17 +26,19 @@ WORKDIR ../..
 
 COPY Dockerfile LICENSE README.md ./
 
+ENV MP4_FILE=source.mp4 VIDEO_FILE=source.yuv AUDIO_FILE=source.pcm
+
 # Since this is the most likely-to-change file, isolate it for better docker layer cache re-use:
-COPY source.mp4 runit.sh ./
+COPY $MP4_FILE runit.sh ./
 
 # Convert to 30 frames per second to allow for varying frame rate sources.
-RUN ffmpeg -i source.mp4 -filter:v fps=30 source-at-30fps.mp4
+RUN ffmpeg -i $MP4_FILE -filter:v fps=30 30fps_$MP4_FILE
 
 # Now convert to raw YUV frames needed by the test code (this is where things get BIG)
-RUN ffmpeg -i source-at-30fps.mp4 source.yuv
+RUN ffmpeg -i 30fps_$MP4_FILE $VIDEO_FILE
 
 # Now, create a raw PCM audio clip from the same mp4 file
-RUN ffmpeg -y  -i source-at-30fps.mp4 -acodec pcm_s16le -f s16le -ac 1 -ar 16000 source.pcm
+RUN ffmpeg -y  -i 30fps_$MP4_FILE -acodec pcm_s16le -f s16le -ac 1 -ar 16000 $AUDIO_FILE
 
 # This is just a demo, so you can connect to it and play around with the built program and sample files.
 ENTRYPOINT /bin/bash
