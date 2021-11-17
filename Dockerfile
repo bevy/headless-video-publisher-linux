@@ -40,5 +40,6 @@ RUN ffmpeg -i 30fps_$MP4_FILE $VIDEO_FILE
 # Now, create a raw PCM audio clip from the same mp4 file
 RUN ffmpeg -y  -i 30fps_$MP4_FILE -acodec pcm_s16le -f s16le -ac 1 -ar 16000 $AUDIO_FILE
 
-# This is just a demo, so you can connect to it and play around with the built program and sample files.
-ENTRYPOINT /bin/bash
+# Pass needed parameters to the helper script as part of the docker run command,
+# as they are too dynamic to default anything here.
+ENTRYPOINT ["./runit.sh"]

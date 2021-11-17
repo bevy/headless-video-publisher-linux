@@ -1,7 +1,7 @@
 # Headless video publisher
 
 This sample uses custom video capturer and custom audio driver to publish a video and audio stream
-in to the video session. 
+in to the video session.
 
 You will need a valid [Vonage Video API](https://tokbox.com/developer/)
 account to build this app. (Note that OpenTok is now the Vonage Video API.)
@@ -31,10 +31,12 @@ docker build -t opentok .
 
 #### Play with the sample script
 
-```bash
-docker run -it opentok
+The docker image is set to run the helper `runit.sh` script on start up.
+Pass in the needed parameters at the end of the docker run.
+Example uses `-it` so you can watch the output and ^C to kill it if/as needed:
 
-# ./runit.sh api-key session-id token
+```bash
+docker run -it opentok API-KEY SESSION-ID TOKEN
 ```
 
 ### OpenTok SDK
@@ -116,7 +118,7 @@ $ ./headless-video-publisher -v video.yuv -a audio.pcm -k apikey -s sessionId -t
 
 ### Preparing the audio and video input files.
 
-This sample accepts video as raw YUV420P frames with frame size of 1280x720@30fps and audio as raw 16-bit 16KHz PCM audio. 
+This sample accepts video as raw YUV420P frames with frame size of 1280x720@30fps and audio as raw 16-bit 16KHz PCM audio.
 This section explains how you can convert any mp4 file to be used by this sample.
 
 Please note that raw video occupies a lot of space (10 seconds clip can be around 400MB). So first you should cut your mp4 to a 10-15 seconds clip.
@@ -125,7 +127,7 @@ Here we use ffmpeg to cut the file to 10 seconds starting from the beginning
 ```bash
 ffmpeg -ss 00:00:00 -i input.mp4 -to 00:00:10 -c copy output.mp4
 ```
-Most videos found on the internet are at 60fps. convert to 30fps 
+Most videos found on the internet are at 60fps. convert to 30fps
 
 ```bash
 ffmpeg -i output.mp4 -filter:v fps=30 output30fps.mp4
