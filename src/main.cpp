@@ -20,6 +20,10 @@ char *token = NULL;
 FILE *audio_fp = NULL;
 FILE *video_fp = NULL;
 
+#define EXIT_BREAKOUT_STARTED  100
+#define EXIT_BREAKOUT_ENDED    101
+int exit_status = EXIT_SUCCESS;  /* to returned when we cleanly stop publishing */
+
 struct custom_video_capturer {
   const otc_video_capturer *video_capturer;
   struct otc_video_capturer_callbacks video_capturer_callbacks;
@@ -60,6 +64,9 @@ static otk_thread_func_return_type video_capturer_thread_start_function(void *ar
 	if(audio_input != NULL)
 		fseek(audio_fp,0,SEEK_SET);
     }
+    if (g_is_publishing == false) {
+        break;
+    }
   }
 
   if (buffer != nullptr) {
@@ -88,7 +95,12 @@ static otk_thread_func_return_type audio_capturer_thread_start_function(void *ar
 		if(video_input == NULL)
 			fseek(audio_fp,0,SEEK_SET);
 	}
+        if (g_is_publishing == false) {
+            break;
+        }
+
   }
+  fclose(audio_fp);
   otk_thread_func_return_value;
 }
 
@@ -194,9 +206,11 @@ static void on_session_connected(otc_session *session, void *user_data) {
   if ((session != nullptr) && (g_publisher != nullptr)) {
     if (otc_session_publish(session, g_publisher) == OTC_SUCCESS) {
       g_is_publishing = true;
+      std::cout << std::endl;
       return;
     }
     std::cout << "Could not publish successfully" << std::endl;
+    std::cout << std::endl;
   }
 }
 
@@ -204,28 +218,33 @@ static void on_session_connection_created(otc_session *session,
                                           void *user_data,
                                           const otc_connection *connection) {
   std::cout << __FUNCTION__ << " callback function" << std::endl;
+  std::cout << std::endl;
 }
 
 static void on_session_connection_dropped(otc_session *session,
                                           void *user_data,
                                           const otc_connection *connection) {
   std::cout << __FUNCTION__ << " callback function" << std::endl;
+  std::cout << std::endl;
 }
 
 static void on_session_stream_received(otc_session *session,
                                        void *user_data,
                                        const otc_stream *stream) {
   std::cout << __FUNCTION__ << " callback function" << std::endl;
+  std::cout << std::endl;
 }
 
 static void on_session_stream_dropped(otc_session *session,
                                       void *user_data,
                                       const otc_stream *stream) {
   std::cout << __FUNCTION__ << " callback function" << std::endl;
+  std::cout << std::endl;
 }
 
 static void on_session_disconnected(otc_session *session, void *user_data) {
   std::cout << __FUNCTION__ << " callback function" << std::endl;
+  std::cout << std::endl;
 }
 
 static void on_session_error(otc_session *session,
@@ -233,13 +252,99 @@ static void on_session_error(otc_session *session,
                              const char *error_string,
                              enum otc_session_error_code error) {
   std::cout << __FUNCTION__ << " callback function" << std::endl;
-  std::cout << "Session error. Error : " << error_string << std::endl;
+  std::cout << "Session error. Error : " << "Code:" << error << " string:" << error_string << std::endl;
+  std::cout << std::endl;
 }
+
+
+/* DWP 2021-11-21 */
+static void on_session_signal_received(otc_session *session,
+                                       void *user_data,
+                                       const char *type,
+                                       const char *signal,
+                                       const otc_connection *connection) {
+  std::cout << __FUNCTION__ << " callback function" << std::endl;
+  std::cout << "     type:" << type << std::endl;
+  std::cout << "   signal:" << signal << std::endl;
+  if (strcmp(type, "breakoutStarted") == 0) {
+    std::cout << "Breakouts started, stopping publishing..." << std::endl;
+    exit_status = EXIT_BREAKOUT_STARTED;
+    g_is_publishing = false;
+    return;
+  }
+  if (strcmp(type, "reroute") == 0) {
+    std::cout << "Breakouts ended, stopping publishing..." << std::endl;
+    exit_status = EXIT_BREAKOUT_ENDED;
+    g_is_publishing = false;
+    return;
+  }
+
+  std::cout << std::endl;
+  return;
+
+}
+
+/* DWP 2021-11-22 vvvv */
+static void on_stream_has_audio_changed(otc_session *session, void *user_data, const otc_stream *stream, otc_bool has_audio) {
+  std::cout << __FUNCTION__ << " callback function" << std::endl;
+  std::cout << "    has_audio: " << has_audio << std::endl;
+  std::cout << std::endl;
+}
+
+static void on_stream_has_video_changed(otc_session *session, void *user_data, const otc_stream *stream, otc_bool has_video) {
+  std::cout << __FUNCTION__ << " callback function" << std::endl;
+  std::cout << "    has_video: " << has_video << std::endl;
+  std::cout << std::endl;
+}
+
+static void on_stream_video_dimensions_changed(otc_session *session, void *user_data, const otc_stream *stream, int width, int height) {
+  std::cout << __FUNCTION__ << " callback function" << std::endl;
+  std::cout << "    width: " << width << " height: " << height << std::endl;
+  std::cout << std::endl;
+}
+
+static void on_stream_video_type_changed(otc_session *session, void *user_data, const otc_stream *stream, enum otc_stream_video_type type) {
+  std::cout << __FUNCTION__ << " callback function" << std::endl;
+  std::cout << "    type: " << type << std::endl;
+  std::cout << std::endl;
+}
+
+static void on_reconnection_started(otc_session *session, void *user_data) {
+  std::cout << __FUNCTION__ << " callback function" << std::endl;
+  std::cout << std::endl;
+}
+
+static void on_reconnected(otc_session *session, void *user_data) {
+  std::cout << __FUNCTION__ << " callback function" << std::endl;
+  std::cout << std::endl;
+}
+
+static void on_archive_started(otc_session *session, void *user_data, const char *archive_id, const char *name) {
+  std::cout << __FUNCTION__ << " callback function" << std::endl;
+  std::cout << "    archive id: " << archive_id << " name: " << name << std::endl;
+  std::cout << std::endl;
+}
+
+static void on_archive_stopped(otc_session *session, void *user_data, const char *archive_id) {
+  std::cout << __FUNCTION__ << " callback function" << std::endl;
+  std::cout << "    archive id: " << archive_id << std::endl;
+  std::cout << std::endl;
+}
+
+static void on_mute_forced(otc_session *session, void *user_data, otc_on_mute_forced_info *mute_info) {
+  std::cout << __FUNCTION__ << " callback function" << std::endl;
+  std::cout << "    active: " << mute_info->active << std::endl;
+  std::cout << std::endl;
+}
+
+
+/* DWP 2021-11-22 ^^^^ */
 
 static void on_publisher_stream_created(otc_publisher *publisher,
                                         void *user_data,
                                         const otc_stream *stream) {
   std::cout << __FUNCTION__ << " callback function" << std::endl;
+  std::cout << std::endl;
 }
 
 static void on_publisher_render_frame(otc_publisher *publisher,
@@ -251,6 +356,7 @@ static void on_publisher_stream_destroyed(otc_publisher *publisher,
                                           void *user_data,
                                           const otc_stream *stream) {
   std::cout << __FUNCTION__ << " callback function" << std::endl;
+  std::cout << std::endl;
 }
 
 static void on_publisher_error(otc_publisher *publisher,
@@ -259,15 +365,18 @@ static void on_publisher_error(otc_publisher *publisher,
                                enum otc_publisher_error_code error_code) {
   std::cout << __FUNCTION__ << " callback function" << std::endl;
   std::cout << "Publisher error. Error code: " << error_string << std::endl;
+  std::cout << std::endl;
 }
 
 static void on_otc_log_message(const char* message) {
   std::cout <<  __FUNCTION__ << ":" << message << std::endl;
+  std::cout << std::endl;
 }
 
 int main(int argc, char** argv) {
   if (otc_init(nullptr) != OTC_SUCCESS) {
     std::cout << "Could not init OpenTok library" << std::endl;
+    std::cout << std::endl;
     return EXIT_FAILURE;
   }
   int opt;
@@ -322,11 +431,28 @@ int main(int argc, char** argv) {
   session_callbacks.on_disconnected = on_session_disconnected;
   session_callbacks.on_error = on_session_error;
 
+  /* DWP 2021-11-21 */
+  session_callbacks.on_signal_received = on_session_signal_received;
+
+  /* DWP 2021-11-22 */
+  session_callbacks.on_stream_has_audio_changed = on_stream_has_audio_changed;
+  session_callbacks.on_stream_has_video_changed = on_stream_has_video_changed;
+  session_callbacks.on_stream_video_dimensions_changed = on_stream_video_dimensions_changed;
+  session_callbacks.on_stream_video_type_changed = on_stream_video_type_changed;
+  session_callbacks.on_reconnection_started = on_reconnection_started;
+  session_callbacks.on_reconnected = on_reconnected;
+  session_callbacks.on_archive_started = on_archive_started;
+  session_callbacks.on_archive_stopped = on_archive_stopped;
+  session_callbacks.on_mute_forced = on_mute_forced;
+
+
+
   otc_session *session = nullptr;
   session = otc_session_new(apikey, session_id, &session_callbacks);
 
   if (session == nullptr) {
     std::cout << "Could not create OpenTok session successfully" << std::endl;
+    std::cout << std::endl;
     return EXIT_FAILURE;
   }
   struct custom_video_capturer *video_capturer = (struct custom_video_capturer *)malloc(sizeof(struct custom_video_capturer));
@@ -364,16 +490,29 @@ int main(int argc, char** argv) {
 
   if (g_publisher == nullptr) {
     std::cout << "Could not create OpenTok publisher successfully" << std::endl;
+    std::cout << std::endl;
     otc_session_delete(session);   
     return EXIT_FAILURE;
   }
   
   otc_session_connect(session, token);
 
+  std::cout << "Waiting 10 seconds for publisher to start." << std::endl;
+
+  usleep(10000 * 1000);
 
   while(1){
-	usleep(100*1000);
+        if (g_is_publishing) {
+	    usleep(100*1000);
+        } else {
+            break;
+        }
   }
+
+  std::cout << std::endl;
+  std::cout << "MAIN LOOP DONE!" << std::endl;
+  std::cout << std::endl;
+
   if ((session != nullptr) && (g_publisher != nullptr) && g_is_publishing.load()) {
     otc_session_unpublish(session, g_publisher);
   }
@@ -392,5 +531,5 @@ int main(int argc, char** argv) {
 
   otc_destroy();
 
-  return EXIT_SUCCESS;
+  return exit_status;
 }
