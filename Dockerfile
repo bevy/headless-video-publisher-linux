@@ -4,7 +4,7 @@
 #      we also install ffmpeg here.
 #    Expected: `source.mp4` a 10-second(ish) long mp4 file to be processed, in the root of this repo.
 
-FROM debian:buster
+FROM python:3.9-buster
 
 WORKDIR demo
 
