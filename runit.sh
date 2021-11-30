@@ -12,13 +12,23 @@ if [ ! -f "$AUDIO_FILE" ]; then
   exit 1
 fi
 
-if [ "x$1" = "x-h" -o $# -ne 3 ]; then
+if [ "x$1" = "x-h" -o $# -lt 3 ]; then
   echo Usage: $0 apiKey sessionId token
   exit 0
 fi
 
 APIKEY="$1"
-SESSIONID="$2"
-TOKEN="$3"
+shift
 
-./src/build/headless-video-publisher -v "${VIDEO_FILE}" -a "${AUDIO_FILE}" -k "$APIKEY" -s "$SESSIONID" -t "$TOKEN"
+SESSIONID="$1"
+shift
+
+TOKEN="$1"
+shift
+
+cmd=(./src/build/headless-video-publisher -k "$APIKEY" -s "$SESSIONID" -t "$TOKEN")
+if [ "x$1" != "x-J" ]; then
+    cmd+=(-v "${VIDEO_FILE}" -a "${AUDIO_FILE}")
+fi
+
+"${cmd[@]}"
