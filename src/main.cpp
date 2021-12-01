@@ -10,6 +10,7 @@
 static std::atomic<bool> g_is_connected(false);
 static otc_publisher *g_publisher = nullptr;
 static std::atomic<bool> g_is_publishing(false);
+static std::atomic<bool> g_keep_running(true);
 
 char *video_input = NULL;
 char *audio_input = NULL;
@@ -244,6 +245,7 @@ static void on_session_stream_dropped(otc_session *session,
 
 static void on_session_disconnected(otc_session *session, void *user_data) {
   std::cout << __FUNCTION__ << " callback function" << std::endl;
+  g_keep_running = false;
   std::cout << std::endl;
 }
 
@@ -269,13 +271,13 @@ static void on_session_signal_received(otc_session *session,
   if (strcmp(type, "breakoutStarted") == 0) {
     std::cout << "Breakouts started, stopping publishing..." << std::endl;
     exit_status = EXIT_BREAKOUT_STARTED;
-    g_is_publishing = false;
+    g_keep_running = false;
     return;
   }
   if (strcmp(type, "reroute") == 0) {
     std::cout << "Breakouts ended, stopping publishing..." << std::endl;
     exit_status = EXIT_BREAKOUT_ENDED;
-    g_is_publishing = false;
+    g_keep_running = false;
     return;
   }
 
@@ -403,10 +405,6 @@ int main(int argc, char** argv) {
 	printf("apikey, sessionid, token are mandatory %s, %s, %s\n",session_id,apikey,token);
 	exit(-1);
     }
-    if(video_input == NULL && audio_input == NULL){
-	printf("You must specify atleast one of - video or audio input\n");
-	exit(-1);
-    }
     printf("using Video:%s and Audio:%s\n",video_input!=NULL ? video_input: "disabled" ,audio_input!=NULL?audio_input: "disabled");
 #ifdef CONSOLE_LOGGING
   otc_log_set_logger_callback(on_otc_log_message);
@@ -471,38 +469,50 @@ int main(int argc, char** argv) {
   publisher_callbacks.on_render_frame = on_publisher_render_frame;
   publisher_callbacks.on_stream_destroyed = on_publisher_stream_destroyed;
   publisher_callbacks.on_error = on_publisher_error;
- 
+
   struct otc_publisher_settings * pub_settings = otc_publisher_settings_new();
   if(video_input == NULL){
+    std::cout << "No video source, flagging: " << OTC_FALSE << std::endl;
   	otc_publisher_settings_set_video_track(pub_settings, OTC_FALSE);
   }
   else{
 	otc_publisher_settings_set_video_capturer(pub_settings,&video_capturer->video_capturer_callbacks);
   }
   if(audio_input == NULL){
+    std::cout << "No audio source, flagging: " << OTC_FALSE << std::endl;
   	otc_publisher_settings_set_audio_track(pub_settings, OTC_FALSE);
   }
   else{
 	otc_set_audio_device(&(device->audio_device_callbacks));
   }
-  otc_publisher_settings_set_name(pub_settings,"headless-publisher");
-  g_publisher = otc_publisher_new_with_settings( &publisher_callbacks,pub_settings);
+  otc_publisher_settings_set_name(pub_settings,"qe-cli-publisher");
+  std::cout << "Name has been set" << std::endl;
 
-  if (g_publisher == nullptr) {
-    std::cout << "Could not create OpenTok publisher successfully" << std::endl;
-    std::cout << std::endl;
-    otc_session_delete(session);   
-    return EXIT_FAILURE;
+  if ((video_input != NULL) || (audio_input != NULL)) {
+      g_publisher = otc_publisher_new_with_settings( &publisher_callbacks,pub_settings);
+      std::cout << "Publisher created." << std::endl;
+
+      if (g_publisher == nullptr) {
+        std::cout << "Could not create OpenTok publisher successfully" << std::endl;
+        std::cout << std::endl;
+        otc_session_delete(session);
+        return EXIT_FAILURE;
+      }
+  } else {
+    g_publisher = NULL;
   }
-  
+
+  std::cout << "About to connect to the session..." << std::endl;
+
   otc_session_connect(session, token);
+  std::cout << "connected to the session." << std::endl;
 
   std::cout << "Waiting 10 seconds for publisher to start." << std::endl;
 
   usleep(10000 * 1000);
 
   while(1){
-        if (g_is_publishing) {
+        if (g_keep_running.load()) {
 	    usleep(100*1000);
         } else {
             break;
@@ -516,7 +526,7 @@ int main(int argc, char** argv) {
   if ((session != nullptr) && (g_publisher != nullptr) && g_is_publishing.load()) {
     otc_session_unpublish(session, g_publisher);
   }
-  
+
   if (g_publisher != nullptr) {
     otc_publisher_delete(g_publisher);
   }
