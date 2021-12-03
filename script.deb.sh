@@ -131,6 +131,7 @@ main ()
   apt_config_url="https://packagecloud.io/install/repositories/tokbox/debian/config_file.list?os=${os}&dist=${dist}&source=script"
 
   apt_source_path="/etc/apt/sources.list.d/tokbox_debian.list"
+  gpg_keyring_path="/usr/share/keyrings/tokbox_debian-archive-keyring.gpg"
 
   echo -n "Installing $apt_source_path..."
 
@@ -180,7 +181,7 @@ main ()
 
   echo -n "Importing packagecloud gpg key... "
   # import the gpg key
-  curl -L "${gpg_key_url}" 2> /dev/null | apt-key add - &>/dev/null
+  curl -fsSL "${gpg_key_url}" | gpg --dearmor > ${gpg_keyring_path}
   echo "done."
 
   echo -n "Running apt-get update... "
