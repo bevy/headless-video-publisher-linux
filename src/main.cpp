@@ -5,6 +5,7 @@
 #include <cstdlib>
 #include <iostream>
 #include <unistd.h>
+#include <time.h>
 #include "otk_thread.h"
 #define NUM_SAMPLES_PER_FRAME 160
 static std::atomic<bool> g_is_connected(false);
@@ -12,6 +13,7 @@ static otc_publisher *g_publisher = nullptr;
 static std::atomic<bool> g_is_publishing(false);
 static std::atomic<bool> g_keep_running(true);
 
+bool publish_slow = false;
 char *video_input = NULL;
 char *audio_input = NULL;
 char *apikey = NULL;
@@ -58,7 +60,11 @@ static otk_thread_func_return_type video_capturer_thread_start_function(void *ar
    	 if (otc_frame != nullptr) {
       		otc_video_frame_delete(otc_frame);
     	}
-    	usleep(((1000 / 30) * 1000));
+        if (publish_slow) {
+            usleep(((1000 / 3) * 1000));
+        } else {
+            usleep(((1000 / 30) * 1000));
+        }
     }
     else{
 	fseek(video_fp,0,SEEK_SET);
@@ -90,7 +96,11 @@ static otk_thread_func_return_type audio_capturer_thread_start_function(void *ar
 	size_t actual = fread(samples, NUM_SAMPLES_PER_FRAME,sizeof(int16_t),audio_fp);
 	if(actual > 0){
 		otc_audio_device_write_capture_data(samples, NUM_SAMPLES_PER_FRAME);
-		usleep(10000);
+                if (publish_slow) {
+                    usleep(100000);
+                } else {
+                    usleep(10000);
+                }
 	}
 	else{
 		if(video_input == NULL)
@@ -265,7 +275,17 @@ static void on_session_signal_received(otc_session *session,
                                        const char *type,
                                        const char *signal,
                                        const otc_connection *connection) {
+  time_t rawtime;
+  struct tm * timeinfo;
+  char buffer [80];
+
+  time (&rawtime);
+  timeinfo = localtime (&rawtime);
+
+  strftime (buffer,80,"%b %d %H:%M:%S %Z",timeinfo);
+
   std::cout << __FUNCTION__ << " callback function" << std::endl;
+  std::cout << "       at:" << buffer << std::endl;
   std::cout << "     type:" << type << std::endl;
   std::cout << "   signal:" << signal << std::endl;
   if (strcmp(type, "breakoutStarted") == 0) {
@@ -382,7 +402,7 @@ int main(int argc, char** argv) {
     return EXIT_FAILURE;
   }
   int opt;
-  while ((opt = getopt(argc, argv, "v:a:t:s:k:")) != -1) {
+  while ((opt = getopt(argc, argv, "v:a:t:s:k:S")) != -1) {
         switch (opt) {
           case 'v':
             video_input = optarg;
@@ -398,6 +418,9 @@ int main(int argc, char** argv) {
             break;
           case 't':
             token = optarg;
+            break;
+          case 'S':
+            publish_slow = true;
             break;
         }
     }
@@ -507,13 +530,9 @@ int main(int argc, char** argv) {
   otc_session_connect(session, token);
   std::cout << "connected to the session." << std::endl;
 
-  std::cout << "Waiting 10 seconds for publisher to start." << std::endl;
-
-  usleep(10000 * 1000);
-
   while(1){
         if (g_keep_running.load()) {
-	    usleep(100*1000);
+	    usleep(1000*1000);
         } else {
             break;
         }

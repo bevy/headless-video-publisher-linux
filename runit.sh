@@ -27,6 +27,10 @@ TOKEN="$1"
 shift
 
 cmd=(./src/build/headless-video-publisher -k "$APIKEY" -s "$SESSIONID" -t "$TOKEN")
+if [ "x$1" = "x-S" ]; then
+    cmd+=("$1")
+    shift
+fi
 if [ "x$1" != "x-J" ]; then
     cmd+=(-v "${VIDEO_FILE}" -a "${AUDIO_FILE}")
 fi
